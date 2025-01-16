@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::constants::{DEFAULT_RPC_URL, PCS_DAO_ADDRESS};
+use std::env;
 
 use alloy::{primitives::Address, providers::ProviderBuilder, sol};
 
@@ -21,10 +21,16 @@ sol! {
 }
 
 pub async fn get_certificate_by_id(ca_id: IPCSDao::CA) -> Result<(Vec<u8>, Vec<u8>)> {
-    let rpc_url = DEFAULT_RPC_URL.parse().expect("Failed to parse RPC URL");
+    let rpc_url = env::var("RPC_URL").expect("RPC_URL env var not set").parse().expect("Invalid RPC URL format");
     let provider = ProviderBuilder::new().on_http(rpc_url);
 
-    let pcs_dao_address_slice = hex::decode(PCS_DAO_ADDRESS).expect("invalid address hex");
+    let mut pcs_dao_address = env::var("PCS_DAO")
+        .expect("PCS_DAO env var not set");
+    pcs_dao_address = pcs_dao_address.trim_start_matches("0x").to_string();
+
+    let pcs_dao_address_slice =
+        hex::decode(pcs_dao_address).expect("Invalid address hex");
+
     let pcs_dao_contract = IPCSDao::new(Address::from_slice(&pcs_dao_address_slice), &provider);
 
     let call_builder = pcs_dao_contract.getCertificateById(ca_id);

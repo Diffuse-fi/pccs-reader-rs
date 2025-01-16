@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::constants::{DEFAULT_RPC_URL, FMSPC_TCB_DAO_ADDRESS};
+use std::env;
 
 use alloy::{
     primitives::{Address, U256},
@@ -23,11 +23,16 @@ sol! {
 }
 
 pub async fn get_tcb_info(tcb_type: u8, fmspc: &str, version: u32) -> Result<Vec<u8>> {
-    let rpc_url = DEFAULT_RPC_URL.parse().expect("Failed to parse RPC URL");
+    let rpc_url = env::var("RPC_URL").expect("RPC_URL env var not set").parse().expect("Invalid RPC URL format");
     let provider = ProviderBuilder::new().on_http(rpc_url);
 
+    let mut fmspc_tcb_dao_address = env::var("FMSPC_TCB_DAO")
+        .expect("FMSPC_TCB_DAO env var not set");
+    fmspc_tcb_dao_address = fmspc_tcb_dao_address.trim_start_matches("0x").to_string();
+
     let fmspc_tcb_dao_address_slice =
-        hex::decode(FMSPC_TCB_DAO_ADDRESS).expect("Invalid address hex");
+        hex::decode(fmspc_tcb_dao_address).expect("Invalid address hex");
+
     let fmspc_tcb_dao_contract =
         IFmspcTcbDao::new(Address::from_slice(&fmspc_tcb_dao_address_slice), &provider);
 

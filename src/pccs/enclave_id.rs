@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::constants::{DEFAULT_RPC_URL, ENCLAVE_ID_DAO_ADDRESS};
+use std::env;
 
 use alloy::{
     primitives::{Address, U256},
@@ -30,11 +30,15 @@ pub enum EnclaveIdType {
 }
 
 pub async fn get_enclave_identity(id: EnclaveIdType, version: u32) -> Result<Vec<u8>> {
-    let rpc_url = DEFAULT_RPC_URL.parse().expect("Failed to parse RPC URL");
+    let rpc_url = env::var("RPC_URL").expect("RPC_URL env var not set").parse().expect("Invalid RPC URL format");
     let provider = ProviderBuilder::new().on_http(rpc_url);
 
+    let mut enclave_id_dao_address = env::var("ENCLAVE_ID_DAO")
+        .expect("ENCLAVE_ID_DAO env var not set");
+    enclave_id_dao_address = enclave_id_dao_address.trim_start_matches("0x").to_string();
+
     let enclave_id_dao_address_slice =
-        hex::decode(ENCLAVE_ID_DAO_ADDRESS).expect("Invalid address hex");
+        hex::decode(enclave_id_dao_address).expect("Invalid address hex");
 
     let enclave_id_dao_contract = IEnclaveIdentityDao::new(
         Address::from_slice(&enclave_id_dao_address_slice),
